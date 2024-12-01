@@ -1,0 +1,115 @@
+import kagglehub
+from transformers import AutoTokenizer
+from datasets import Dataset
+import pandas as pd
+import pip
+#import transliteration as transliteration
+
+
+
+
+# Download latest version
+path = kagglehub.dataset_download("parvmodi/english-to-kannada-machine-translation-dataset")
+
+print("Path to dataset files:", path)
+import os
+import pandas as pd
+
+# Define file paths
+kannada_file = os.path.join(path, "train.kn")
+english_file = os.path.join(path, "train.en")
+
+# Load the files
+with open(kannada_file, "r", encoding="utf-8") as kn_file:
+    kannada_sentences = kn_file.readlines()
+
+with open(english_file, "r", encoding="utf-8") as en_file:
+    english_sentences = en_file.readlines()
+
+# Print examples to check
+print("Sample Kannada sentence:", kannada_sentences[:5])
+print("Sample English sentence:", english_sentences[:5])
+
+from indic_transliteration import sanscript
+from indic_transliteration.sanscript import transliterate
+
+# Transliterate Kannada sentences to Romanized Kannada
+romanized_sentences = [
+    transliterate(sentence.strip(), sanscript.KANNADA, sanscript.ITRANS)
+    for sentence in kannada_sentences
+]
+
+# Check results
+for i in range(5):
+    print(f"Original Kannada: {kannada_sentences[i].strip()}")
+    print(f"Romanized Kannada: {romanized_sentences[i]}")
+
+
+import pandas as pd
+
+# Create a DataFrame
+processed_data = pd.DataFrame({
+    "Romanized Kannada": romanized_sentences,
+    "Kannada Script": [sentence.strip() for sentence in kannada_sentences]
+})
+
+# Preview the dataset
+print(processed_data.head())
+
+# Save to a CSV file
+processed_data.to_csv("romanized_kannada_dataset.csv", index=False)
+print("Processed dataset saved as 'romanized_kannada_dataset.csv'")
+
+data = pd.read_csv("romanized_kannada_dataset.csv")
+
+# Example usage
+print(data.head())
+
+import pandas as pd
+from transformers import AutoTokenizer
+
+# Step 1: Load your dataset
+dataset_path = 'romanized_kannada_dataset.csv'
+df = pd.read_csv(dataset_path)
+
+# Step 2: Extract Romanized Kannada and Kannada Script columns
+romanized_sentences = df['Romanized Kannada'].tolist()  # List of Romanized Kannada sentences
+kannada_script_sentences = df['Kannada Script'].tolist()  # List of Kannada script sentences
+
+# Step 3: Initialize the tokenizer (replace 'HuggingFaceModelName' with your chosen model name)
+tokenizer = AutoTokenizer.from_pretrained('Helsinki-NLP/opus-mt-en-mul')
+
+# Step 4: Tokenize the Romanized Kannada text (input)
+tokenized_inputs = tokenizer(
+    romanized_sentences,  # Use the list of Romanized Kannada sentences
+    padding=True,   # Pad shorter sequences
+    truncation=True, # Truncate longer sequences
+    max_length=128,  # Set a maximum sequence length (adjust as needed)
+    return_tensors="pt"  # Return PyTorch tensors (if you're using PyTorch)
+)
+
+# Step 5: Tokenize the Kannada Script sentences (target/labels)
+tokenized_labels = tokenizer(
+    kannada_script_sentences,  # Use the list of Kannada script sentences
+    padding=True,   # Pad shorter sequences
+    truncation=True, # Truncate longer sequences
+    max_length=128,  # Set a maximum sequence length (adjust as needed)
+    return_tensors="pt"  # Return PyTorch tensors (if you're using PyTorch)
+)
+
+# Step 6: Inspect tokenized inputs and labels
+print("Tokenized Inputs:", tokenized_inputs)
+print("Tokenized Labels:", tokenized_labels)
+
+# Test with new input
+test_input = "uta ayta"
+encoded_input = tokenizer(test_input, return_tensors="pt")
+output_ids = model.generate(encoded_input["input_ids"])
+kannada_output = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+
+print("Romanized Kannada:", test_input)
+print("Kannada Script:", kannada_output)
+
+
+model.save_pretrained("./fine_tuned_kannada_model")
+tokenizer.save_pretrained("./fine_tuned_kannada_model")
